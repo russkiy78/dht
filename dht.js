@@ -1,23 +1,38 @@
-/**
- * Created by russkiy on 04.03.16.
- */
+var ed = require('ed25519-supercop')
+var keypair = ed.createKeyPair(ed.createSeed())
+
+var value = new Buffer(200)// the payload you want to send
+value.fill('1')
+
+var opts = {
+    k: keypair.publicKey,
+    seq: 0,
+    v: value,
+    sign: function (buf) {
+        return ed.sign(buf, keypair.publicKey, keypair.secretKey)
+    }
+}
+
+console.log(opts)
+
+
 var DHT = require('bittorrent-dht')
-var magnet = require('magnet-uri')
+var dht = new DHT
 
-var uri = 'magnet:?xt=urn:btih:e3811b9539cacff680e418124272177c47477157'
-var parsed = magnet(uri)
+var hash
 
-console.log(parsed.infoHash) // 'e3811b9539cacff680e418124272177c47477157'
+dht.put(opts, function (err, hash) {
+    console.error('error=', err)
+    console.log('hash=', hash)
 
-var dht = new DHT()
+    dht.get(hash, function (err, res) {
+        console.log( '--------------')
+        console.log(  res)
+    })
 
-dht.listen(20000, function () {
-    console.log('now listening')
-})
-
-// find peers for the given torrent info hash
-dht.lookup(parsed.infoHash)
-
-dht.on('peer', function (peer, infoHash, from) {
-    console.log('found potential peer ' + peer.host + ':' + peer.port + ' through ' + from.host + ':' + from.port)
+    dht.get(hash, function (err, res) {
+        console.log( '--------------')
+        console.log(  res)
+        console.log(  dht.toJSON())
+    })
 })
